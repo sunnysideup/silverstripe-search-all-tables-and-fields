@@ -2,6 +2,10 @@
 
 To use this module, install it and run the following from the command line: 
 ```shell
+    # search
+    vendor/bin/sake dev/tasks/search-all-tables-and-fields s=foo 
+
+    # replace
     vendor/bin/sake dev/tasks/search-all-tables-and-fields s=foo r=bar c=0 f=0
 ```
 - s = search term
