@@ -1,4 +1,4 @@
-# Contributing to assets_overview
+# Contributing to search_all_tables_and_fields
 
 Please read the
 [generic write up for contributing](https://docs.silverstripe.org/en/4.0/contributing/)

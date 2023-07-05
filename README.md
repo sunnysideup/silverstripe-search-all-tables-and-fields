@@ -1,11 +1,11 @@
-# Silverstripe assets_overview module
-[![Build Status](https://travis-ci.org/sunnysideup/silverstripe-assets_overview.svg?branch=master)](https://travis-ci.org/sunnysideup/silverstripe-assets_overview)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/sunnysideup/silverstripe-assets_overview/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/sunnysideup/silverstripe-assets_overview/?branch=master)
-[![codecov.io](https://codecov.io/github/sunnysideup/silverstripe-assets_overview/coverage.svg?branch=master)](https://codecov.io/github/sunnysideup/silverstripe-assets_overview?branch=master)
+# Silverstripe search_all_tables_and_fields module
+[![Build Status](https://travis-ci.org/sunnysideup/silverstripe-search_all_tables_and_fields.svg?branch=master)](https://travis-ci.org/sunnysideup/silverstripe-search_all_tables_and_fields)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/sunnysideup/silverstripe-search_all_tables_and_fields/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/sunnysideup/silverstripe-search_all_tables_and_fields/?branch=master)
+[![codecov.io](https://codecov.io/github/sunnysideup/silverstripe-search_all_tables_and_fields/coverage.svg?branch=master)](https://codecov.io/github/sunnysideup/silverstripe-search_all_tables_and_fields?branch=master)
 
-[![Latest Stable Version](https://poser.pugx.org/sunnysideup/assets_overview/version)](https://packagist.org/packages/sunnysideup/assets_overview)
-[![License](https://poser.pugx.org/sunnysideup/assets_overview/license)](https://packagist.org/packages/sunnysideup/assets_overview)
-[![Monthly Downloads](https://poser.pugx.org/sunnysideup/assets_overview/d/monthly)](https://packagist.org/packages/sunnysideup/assets_overview)
+[![Latest Stable Version](https://poser.pugx.org/sunnysideup/search_all_tables_and_fields/version)](https://packagist.org/packages/sunnysideup/search_all_tables_and_fields)
+[![License](https://poser.pugx.org/sunnysideup/search_all_tables_and_fields/license)](https://packagist.org/packages/sunnysideup/search_all_tables_and_fields)
+[![Monthly Downloads](https://poser.pugx.org/sunnysideup/search_all_tables_and_fields/d/monthly)](https://packagist.org/packages/sunnysideup/search_all_tables_and_fields)
 
 
 ## Documentation
@@ -14,7 +14,7 @@
 
  * [Developer Docs](docs/en/INDEX.md)
  * [User Guide](docs/en/userguide.md)
- * [API Docs](http://docs.ssmods.com/sunnysideup/assets_overview/classes.xhtml)
+ * [API Docs](http://docs.ssmods.com/sunnysideup/search_all_tables_and_fields/classes.xhtml)
 
 
 ## Requirements
@@ -35,19 +35,19 @@ See [composer.json](composer.json) for details
 
 
 ```
-composer require sunnysideup/assets_overview
+composer require sunnysideup/search_all_tables_and_fields
 ```
 
 ### Configuration
 
 
 
-In the `_config` folder you will find the `assets_overview.yml.example`
+In the `_config` folder you will find the `search_all_tables_and_fields.yml.example`
 file that shows options for the configuration of this module.
 
 We recommend that you:
 
-  1. copy these `assets_overview.yml.example` files into your
+  1. copy these `search_all_tables_and_fields.yml.example` files into your
 `app/_config` folder (where available - otherwise search for `private static $` in the module to see what can be configured)
   2. remove the .example extension,
   3. delete the lines you do not care about, and
