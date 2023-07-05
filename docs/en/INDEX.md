@@ -6,8 +6,8 @@ To use this module, install it and run the following from the command line:
 ```
 - s = search term
   
-- r = replace terms
+- r = replace terms (optional)
   
-- c = is case sensitive?
+- c = is case sensitive? (optional)
   
-- f = is full cell value match (as opposed to partial match)
+- f = is full cell value match (as opposed to partial match) (optional)
