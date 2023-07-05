@@ -12,10 +12,10 @@ use SilverStripe\ORM\DB;
 class SearchAllTablesAndFields extends BuildTask
 {
     /**
-        * Title
-        *
-        * @var string
-        */
+     * Title
+     *
+     * @var string
+     */
     protected $title = 'Search all Tables and Fields using vendor/bin/sake dev/tasks/search-all-tables-and-fields s=SEARCHTERM';
 
     /**
@@ -195,7 +195,6 @@ class SearchAllTablesAndFields extends BuildTask
 
     protected function replaceForOneColumnRow(string $tableName, string $columnName, int $id)
     {
-
         if($this->replaceTerm) {
             DB::alteration_message('Replacing '.$this->searchTermRaw.' with '.$this->replaceTermRaw.' in '.$tableName.'.'.$columnName, 'deleted');
             if ($this->fullMatch) {
@@ -231,7 +230,6 @@ class SearchAllTablesAndFields extends BuildTask
                         WHERE LOWER("'.$columnName.'") LIKE \'%'.strtolower($this->searchTermRaw).'%\'';
                 }
             }
-
             DB::query($sql);
         }
     }
