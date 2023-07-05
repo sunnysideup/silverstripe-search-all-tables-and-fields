@@ -3,6 +3,9 @@
 namespace Sunnysideup\SearchAllTablesAndFields\Tasks;
 
 use SilverStripe\Control\Director;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Core\Convert;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
 
@@ -13,14 +16,14 @@ class SearchAllTablesAndFields extends BuildTask
         *
         * @var string
         */
-    protected $title = 'Search all Tables and Fields using /dev/tasks/search-all-tables-and-fields?q=SEARCHTERM';
+    protected $title = 'Search all Tables and Fields using /dev/tasks/search-all-tables-and-fields?q=SEARCHTERM, you can add &r=REPLACETERM to replace the search term with the replace term.';
 
     /**
      * Description
      *
      * @var string
      */
-    protected $description = '';
+    protected $description = 'Goes through ALL the tables and fields and ouputs a list of IDs with matches in the tables and IDs for Rows';
 
     /**
      * Enabled
@@ -34,21 +37,7 @@ class SearchAllTablesAndFields extends BuildTask
      *
      * @var string
      */
-    private static $segment = 'ImageDownsizeTask';
-
-    /**
-     * Image max width - images larger than this width will be downsized
-     *
-     * @var int px
-     */
-    private static $maxImgWidth = 2000;
-
-    /**
-     * Image max height - images larger than this height will be downsized
-     *
-     * @var int px
-     */
-    private static $maxImgHeight = 2000;
+    private static $segment = 'search-all-tables-and-fields';
 
     /**
      * Run
@@ -64,7 +53,8 @@ class SearchAllTablesAndFields extends BuildTask
         }
         $dbConn = DB::get_conn();
         $dbName = $dbConn->getSelectedDatabase();
-        $searchTerm = $request->getVar('q');
+        $searchTerm = Convert::raw2sql($request->getVar('q'));
+        $replaceTerm = Convert::raw2sql($request->getVar('r'));
 
         // Get all tables in the database
         $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '{$dbName}'";
@@ -87,20 +77,23 @@ class SearchAllTablesAndFields extends BuildTask
 
             // Loop through all columns and add a condition for each column
             foreach ($columns as $column) {
+                echo '- '.$column.PHP_EOL;
                 $columnName = $column["column_name"];
-                $conditions[] = "{$columnName} LIKE '%{$searchTerm}%'";
+                $conditions[] = "";
+                $sql = "SELECT ID, $columnName FROM {$tableName} WHERE {$columnName} LIKE '%{$searchTerm}%'";
+                $results = DB::query($sql);
+                foreach($results as $result) {
+                    echo '  - '.implode('|', $result).PHP_EOL;
+                    if($replaceTerm) {
+                        $sql = "
+                            UPDATE {$tableName}
+                            SET {$columnName} = REPLACE({$columnName}, '{$searchTerm}', '{$replaceTerm}')
+                            WHERE ID = {$result['ID']}";
+                        DB::query($sql);
+                    }
+                }
             }
 
-            // Join all conditions with OR
-            $sql = "SELECT ID FROM {$tableName} WHERE " . implode(" OR ", $conditions);
-
-            // Execute the query
-            $results = DB::query($sql);
-
-            // Output the results
-            foreach($results as $result) {
-                echo $result["ID"].PHP_EOL;
-            }
         }
     }
 }
