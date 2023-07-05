@@ -18,11 +18,6 @@ class SearchAllTablesAndFields extends BuildTask
      */
     protected $title = 'Search all Tables and Fields using vendor/bin/sake dev/tasks/search-all-tables-and-fields s=SEARCHTERM';
 
-    /**
-     * Description
-     *
-     * @var string
-     */
     protected $description = '
 
         To search for a class name, add four backslashes - e.g. MyApp\\\\\\\\MyClass.
@@ -34,18 +29,8 @@ class SearchAllTablesAndFields extends BuildTask
 
         ';
 
-    /**
-     * Enabled
-     *
-     * @var mixed
-     */
     protected $enabled = true;
 
-    /**
-     * Segment URL
-     *
-     * @var string
-     */
     private static $segment = 'search-all-tables-and-fields';
 
     protected $dbName = '';
@@ -55,6 +40,12 @@ class SearchAllTablesAndFields extends BuildTask
     protected $replaceTerm = '';
     protected $caseSensitive = false;
     protected $fullMatch = false;
+
+    /**
+     * when outputting matches,
+     * how many characters should be added to the left and right of the match
+     * @var int
+     */
     protected $addToStringCharacters = 10;
 
     /**
@@ -62,7 +53,6 @@ class SearchAllTablesAndFields extends BuildTask
      *
      * @param HTTPRequest $request HTTP request
      *
-     * @return HTTPResponse
      */
     public function run($request)
     {
@@ -147,13 +137,9 @@ class SearchAllTablesAndFields extends BuildTask
     protected function replaceForOneTable(string $tableName)
     {
 
-
         // Get all columns in the table
         $sql = "SELECT column_name FROM information_schema.columns WHERE table_name = '{$tableName}' AND table_schema = '{$this->dbName}'";
         $columns = DB::query($sql);
-
-        // Build the query
-        $conditions = [];
 
         // Loop through all columns and add a condition for each column
         foreach ($columns as $column) {
