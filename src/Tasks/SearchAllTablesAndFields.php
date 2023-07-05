@@ -61,7 +61,9 @@ class SearchAllTablesAndFields extends BuildTask
         $searchTermRaw = (string) $request->getVar('s');
         $replaceTermRaw = (string) $request->getVar('r');
         $caseSensitiveRaw = strtolower((string) $request->getVar('c'));
-
+        if(! $searchTermRaw) {
+            exit('Please add a search term using s=SEARCHTERM');
+        }
         $searchTerm = Convert::raw2sql($searchTermRaw);
         $replaceTerm = Convert::raw2sql($replaceTermRaw);
         if($replaceTerm) {
