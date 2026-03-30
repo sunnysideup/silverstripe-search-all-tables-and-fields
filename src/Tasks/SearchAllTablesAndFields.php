@@ -2,11 +2,13 @@
 
 namespace Sunnysideup\SearchAllTablesAndFields\Tasks;
 
-use SilverStripe\Control\Director;
-use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Convert;
 use SilverStripe\Dev\BuildTask;
+use SilverStripe\PolyExecution\PolyOutput;
 use SilverStripe\ORM\DB;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 
 class SearchAllTablesAndFields extends BuildTask
 {
@@ -15,9 +17,9 @@ class SearchAllTablesAndFields extends BuildTask
      *
      * @var string
      */
-    protected $title = 'Search all Tables and Fields using vendor/bin/sake dev/tasks/search-all-tables-and-fields s=SEARCHTERM';
+    protected string $title = 'Search all Tables and Fields using vendor/bin/sake dev/tasks/search-all-tables-and-fields s=SEARCHTERM';
 
-    protected $description = '
+    protected static string $description = '
 
         To search for a class name, add four backslashes - e.g. MyApp\\\\\\\\MyClass.
         Options
@@ -30,7 +32,7 @@ class SearchAllTablesAndFields extends BuildTask
 
     protected $enabled = true;
 
-    private static $segment = 'search-all-tables-and-fields';
+    protected static string $commandName = 'search-all-tables-and-fields';
 
     protected $dbName = '';
 
@@ -53,43 +55,32 @@ class SearchAllTablesAndFields extends BuildTask
      */
     protected $addToStringCharacters = 10;
 
-    /**
-     * Run
-     *
-     * @param HTTPRequest $request HTTP request
-     *
-     * @TODO SSU RECTOR UPGRADE TASK - BuildTask::run: Added new parameter $output in BuildTask::run()
-     * @TODO SSU RECTOR UPGRADE TASK - BuildTask::run: Changed type of parameter $request in BuildTask::run() from dynamic to Symfony\Component\Console\Input\InputInterface
-     * @TODO SSU RECTOR UPGRADE TASK - BuildTask::run: Renamed parameter $request in BuildTask::run() to $input
-     * @TODO SSU RECTOR UPGRADE TASK - BuildTask::run: Changed return type for method BuildTask::run() from dynamic to int
-     */
-    public function run($request)
+    protected function execute(InputInterface $input, PolyOutput $output): int
     {
-        if (!Director::is_cli()) {
-            exit('Only works in cli');
+        $this->getParams($input);
+
+        $this->outputSettings($output);
+
+        if (!$this->searchTerm) {
+            $output->writeln('Please add a search term using s=SEARCHTERM');
+            return Command::INVALID;
         }
 
-        $this->getParams($request);
+        $this->loopThroughTables($output);
 
-        $this->outputSettings($request);
-
-        if(! $this->searchTerm) {
-            exit('Please add a search term using s=SEARCHTERM');
-        }
-
-        $this->loopThroughTables();
+        return Command::SUCCESS;
 
     }
 
-    protected function getParams($request)
+    protected function getParams(InputInterface $input)
     {
         $dbConn = DB::get_conn();
         $this->dbName = $dbConn->getSelectedDatabase();
-        $this->searchTermRaw = (string) $request->getVar('s');
-        $this->replaceTermRaw = (string) $request->getVar('r');
-        $fullMatchRaw = (string) $request->getVar('f');
-        $caseSensitiveRaw = strtolower((string) $request->getVar('c'));
-        $fullMatchRaw = strtolower((string) $request->getVar('f'));
+        $this->searchTermRaw = (string) $input->getOption('search');
+        $this->replaceTermRaw = (string) $input->getOption('replace');
+        $fullMatchRaw = strtolower((string) $input->getOption('full-match'));
+        $caseSensitiveRaw = strtolower((string) $input->getOption('case-sensitive'));
+        $fullMatchRaw = strtolower((string) $input->getOption('full-match'));
 
         $this->searchTerm = Convert::raw2sql($this->searchTermRaw);
         $this->replaceTerm = Convert::raw2sql($this->replaceTermRaw);
@@ -107,25 +98,25 @@ class SearchAllTablesAndFields extends BuildTask
     }
 
 
-    protected function outputSettings($request)
+    protected function outputSettings(PolyOutput $output)
     {
-        echo $this->description.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo 'Searching FOR '.$this->searchTermRaw.' '.PHP_EOL;
+        $output->writeln($this->description);
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
+        $output->writeln('Searching FOR '.$this->searchTermRaw.' ');
         if($this->replaceTermRaw) {
-            echo '... and replacing with '.$this->replaceTermRaw.PHP_EOL;
+            $output->writeln('... and replacing with '.$this->replaceTermRaw);
         }
 
-        echo $this->caseSensitive ? 'Case Sensitive'.PHP_EOL : 'case insensitive'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
+        $output->writeln($this->caseSensitive ? 'Case Sensitive' : 'case insensitive');
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
 
     }
 
-    protected function loopThroughTables()
+    protected function loopThroughTables(PolyOutput $output)
     {
         $sql = sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s'", $this->dbName);
         $tables = DB::query($sql);
@@ -133,11 +124,11 @@ class SearchAllTablesAndFields extends BuildTask
         // Loop through all tables
         foreach ($tables as $table) {
             $tableName = $table["table_name"] ?? $table['TABLE_NAME'];
-            $this->replaceForOneTable($tableName);
+            $this->replaceForOneTable($tableName, $output);
         }
     }
 
-    protected function replaceForOneTable(string $tableName)
+    protected function replaceForOneTable(string $tableName, PolyOutput $output)
     {
 
         // Get all columns in the table
@@ -165,27 +156,27 @@ class SearchAllTablesAndFields extends BuildTask
             foreach($results as $result) {
                 $id = $result['ID'] ?? 0;
                 if($shownCol === false) {
-                    echo '-------------------------------'.PHP_EOL;
-                    echo $tableName.PHP_EOL;
-                    echo '-------------------------------'.PHP_EOL;
-                    echo '- '.$columnName.PHP_EOL;
+                    $output->writeln('-------------------------------');
+                    $output->writeln($tableName);
+                    $output->writeln('-------------------------------');
+                    $output->writeln('- '.$columnName);
                     $shownCol = true;
                 }
 
-                echo '  - '.$id.' - '.$this->findWordInString($result['C'], $this->searchTerm).PHP_EOL;
+                $output->writeln('  - '.$id.' - '.$this->findWordInString($result['C'], $this->searchTerm));
                 if($id) {
-                    $this->replaceForOneColumnRow($tableName, $columnName, $id);
+                    $this->replaceForOneColumnRow($tableName, $columnName, $id, $output);
                 } else {
-                    echo 'ERROR - skipping row as no ID present.'.PHP_EOL;
+                    $output->writeln('ERROR - skipping row as no ID present.');
                 }
             }
         }
     }
 
-    protected function replaceForOneColumnRow(string $tableName, string $columnName, int $id)
+    protected function replaceForOneColumnRow(string $tableName, string $columnName, int $id, PolyOutput $output)
     {
         if($this->replaceTerm) {
-            DB::alteration_message('Replacing '.$this->searchTermRaw.' with '.$this->replaceTermRaw.' in '.$tableName.'.'.$columnName, 'deleted');
+            $output->writeln('Replacing '.$this->searchTermRaw.' with '.$this->replaceTermRaw.' in '.$tableName.'.'.$columnName);
             if ($this->fullMatch) {
                 if ($this->caseSensitive) {
                     // Full match, case-sensitive
@@ -259,5 +250,15 @@ class SearchAllTablesAndFields extends BuildTask
         }
 
         return $output;
+    }
+
+    public function getOptions(): array
+    {
+        return [
+            ['search', 's', InputOption::VALUE_REQUIRED, 'Search term'],
+            ['replace', 'r', InputOption::VALUE_OPTIONAL, 'Replacement term'],
+            ['case-sensitive', 'c', InputOption::VALUE_OPTIONAL, 'Case sensitive search flag'],
+            ['full-match', 'f', InputOption::VALUE_OPTIONAL, 'Full match flag'],
+        ];
     }
 }
