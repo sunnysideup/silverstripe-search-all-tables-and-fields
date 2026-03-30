@@ -2,12 +2,13 @@
 
 namespace Sunnysideup\SearchAllTablesAndFields\Tasks;
 
-use SilverStripe\Control\Director;
-use SilverStripe\Control\HTTPRequest;
-use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Convert;
 use SilverStripe\Dev\BuildTask;
+use SilverStripe\PolyExecution\PolyOutput;
 use SilverStripe\ORM\DB;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 
 class SearchAllTablesAndFields extends BuildTask
 {
@@ -16,9 +17,9 @@ class SearchAllTablesAndFields extends BuildTask
      *
      * @var string
      */
-    protected $title = 'Search all Tables and Fields using vendor/bin/sake dev/tasks/search-all-tables-and-fields s=SEARCHTERM';
+    protected string $title = 'Search all Tables and Fields using vendor/bin/sake dev/tasks/search-all-tables-and-fields s=SEARCHTERM';
 
-    protected $description = '
+    protected static string $description = '
 
         To search for a class name, add four backslashes - e.g. MyApp\\\\\\\\MyClass.
         Options
@@ -31,14 +32,20 @@ class SearchAllTablesAndFields extends BuildTask
 
     protected $enabled = true;
 
-    private static $segment = 'search-all-tables-and-fields';
+    protected static string $commandName = 'search-all-tables-and-fields';
 
     protected $dbName = '';
+
     protected $searchTermRaw = '';
+
     protected $replaceTermRaw = '';
+
     protected $searchTerm = '';
+
     protected $replaceTerm = '';
+
     protected $caseSensitive = false;
+
     protected $fullMatch = false;
 
     /**
@@ -48,97 +55,84 @@ class SearchAllTablesAndFields extends BuildTask
      */
     protected $addToStringCharacters = 10;
 
-    /**
-     * Run
-     *
-     * @param HTTPRequest $request HTTP request
-     *
-     */
-    public function run($request)
+    protected function execute(InputInterface $input, PolyOutput $output): int
     {
-        if (!Director::is_cli()) {
-            exit('Only works in cli');
-        }
-        $this->getParams($request);
+        $this->getParams($input);
 
-        $this->outputSettings($request);
+        $this->outputSettings($output);
 
-        if(! $this->searchTerm) {
-            exit('Please add a search term using s=SEARCHTERM');
+        if (!$this->searchTerm) {
+            $output->writeln('Please add a search term using s=SEARCHTERM');
+            return Command::INVALID;
         }
 
-        $this->loopThroughTables($request);
+        $this->loopThroughTables($output);
+
+        return Command::SUCCESS;
 
     }
 
-    protected function getParams($request)
+    protected function getParams(InputInterface $input)
     {
         $dbConn = DB::get_conn();
         $this->dbName = $dbConn->getSelectedDatabase();
-        $this->searchTermRaw = (string) $request->getVar('s');
-        $this->replaceTermRaw = (string) $request->getVar('r');
-        $fullMatchRaw = (string) $request->getVar('f');
-        $caseSensitiveRaw = strtolower((string) $request->getVar('c'));
-        $fullMatchRaw = strtolower((string) $request->getVar('f'));
+        $this->searchTermRaw = (string) $input->getOption('search');
+        $this->replaceTermRaw = (string) $input->getOption('replace');
+        $fullMatchRaw = strtolower((string) $input->getOption('full-match'));
+        $caseSensitiveRaw = strtolower((string) $input->getOption('case-sensitive'));
+        $fullMatchRaw = strtolower((string) $input->getOption('full-match'));
 
         $this->searchTerm = Convert::raw2sql($this->searchTermRaw);
         $this->replaceTerm = Convert::raw2sql($this->replaceTermRaw);
         if($this->replaceTerm) {
             $this->caseSensitive =
-                $caseSensitiveRaw !== '0' &&
-                ($caseSensitiveRaw) !== 'false' &&
-                ($caseSensitiveRaw) !== 'no';
+                !in_array($caseSensitiveRaw, ['0', 'false', 'no'], true);
             $this->fullMatch =
-                $fullMatchRaw !== '0' &&
-                ($fullMatchRaw) !== 'false' &&
-                ($fullMatchRaw) !== 'no';
+                !in_array($fullMatchRaw, ['0', 'false', 'no'], true);
         } else {
             $this->caseSensitive =
-                $caseSensitiveRaw === '1' ||
-                ($caseSensitiveRaw) === 'true' ||
-                ($caseSensitiveRaw) === 'yes';
+                in_array($caseSensitiveRaw, ['1', 'true', 'yes'], true);
             $this->fullMatch =
-                $fullMatchRaw === '1' ||
-                ($fullMatchRaw) === 'true' ||
-                ($fullMatchRaw) === 'yes';
+                in_array($fullMatchRaw, ['1', 'true', 'yes'], true);
         }
     }
 
 
-    protected function outputSettings($request)
+    protected function outputSettings(PolyOutput $output)
     {
-        echo $this->description.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo 'Searching FOR '.$this->searchTermRaw.' '.PHP_EOL;
+        $output->writeln($this->description);
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
+        $output->writeln('Searching FOR '.$this->searchTermRaw.' ');
         if($this->replaceTermRaw) {
-            echo '... and replacing with '.$this->replaceTermRaw.PHP_EOL;
+            $output->writeln('... and replacing with '.$this->replaceTermRaw);
         }
-        echo $this->caseSensitive ? 'Case Sensitive'.PHP_EOL : 'case insensitive'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
-        echo '-------------------------------'.PHP_EOL;
+
+        $output->writeln($this->caseSensitive ? 'Case Sensitive' : 'case insensitive');
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
+        $output->writeln('-------------------------------');
 
     }
 
-    protected function loopThroughTables()
+    protected function loopThroughTables(PolyOutput $output)
     {
-        $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '{$this->dbName}'";
+        $sql = sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s'", $this->dbName);
         $tables = DB::query($sql);
         // Get all tables in the database
         // Loop through all tables
         foreach ($tables as $table) {
             $tableName = $table["table_name"] ?? $table['TABLE_NAME'];
-            $this->replaceForOneTable($tableName);
+            $this->replaceForOneTable($tableName, $output);
         }
     }
 
-    protected function replaceForOneTable(string $tableName)
+    protected function replaceForOneTable(string $tableName, PolyOutput $output)
     {
 
         // Get all columns in the table
-        $sql = "SELECT column_name FROM information_schema.columns WHERE table_name = '{$tableName}' AND table_schema = '{$this->dbName}'";
+        $sql = sprintf("SELECT column_name FROM information_schema.columns WHERE table_name = '%s' AND table_schema = '%s'", $tableName, $this->dbName);
         $columns = DB::query($sql);
 
         // Loop through all columns and add a condition for each column
@@ -146,76 +140,75 @@ class SearchAllTablesAndFields extends BuildTask
             $columnName = $column["column_name"] ?? $column['COLUMN_NAME'];
             $shownCol = false;
             $conditions[] = "";
-            if($this->fullMatch) {
+            if ($this->fullMatch) {
                 if ($this->caseSensitive) {
-                    $sql = "SELECT \"ID\", \"$columnName\" AS C FROM \"{$tableName}\" WHERE BINARY \"{$columnName}\" = BINARY '{$this->searchTerm}' ORDER BY \"ID\" ASC";
+                    $sql = sprintf("SELECT \"ID\", \"%s\" AS C FROM \"%s\" WHERE BINARY \"%s\" = BINARY '%s' ORDER BY \"ID\" ASC", $columnName, $tableName, $columnName, $this->searchTerm);
                 } else {
-                    $sql = "SELECT \"ID\", \"$columnName\" AS C FROM \"{$tableName}\" WHERE \"{$columnName}\" = '{$this->searchTerm}' ORDER BY \"ID\" ASC";
+                    $sql = sprintf("SELECT \"ID\", \"%s\" AS C FROM \"%s\" WHERE \"%s\" = '%s' ORDER BY \"ID\" ASC", $columnName, $tableName, $columnName, $this->searchTerm);
                 }
+            } elseif ($this->caseSensitive) {
+                $sql = sprintf("SELECT \"ID\", \"%s\" AS C FROM \"%s\" WHERE BINARY \"%s\" LIKE BINARY '%%%s%%' ORDER BY \"ID\" ASC", $columnName, $tableName, $columnName, $this->searchTerm);
             } else {
-                if($this->caseSensitive) {
-                    $sql = "SELECT \"ID\", \"$columnName\" AS C FROM \"{$tableName}\" WHERE BINARY \"{$columnName}\" LIKE BINARY '%{$this->searchTerm}%' ORDER BY \"ID\" ASC";
-                } else {
-                    $sql = "SELECT \"ID\", \"$columnName\" AS C FROM \"{$tableName}\" WHERE \"{$columnName}\" LIKE '%{$this->searchTerm}%' ORDER BY \"ID\" ASC";
-                }
+                $sql = sprintf("SELECT \"ID\", \"%s\" AS C FROM \"%s\" WHERE \"%s\" LIKE '%%%s%%' ORDER BY \"ID\" ASC", $columnName, $tableName, $columnName, $this->searchTerm);
             }
+
             $results = DB::query($sql);
             foreach($results as $result) {
                 $id = $result['ID'] ?? 0;
                 if($shownCol === false) {
-                    echo '-------------------------------'.PHP_EOL;
-                    echo $tableName.PHP_EOL;
-                    echo '-------------------------------'.PHP_EOL;
-                    echo '- '.$columnName.PHP_EOL;
+                    $output->writeln('-------------------------------');
+                    $output->writeln($tableName);
+                    $output->writeln('-------------------------------');
+                    $output->writeln('- '.$columnName);
                     $shownCol = true;
                 }
-                echo '  - '.$id.' - '.$this->findWordInString($result['C'], $this->searchTerm).PHP_EOL;
+
+                $output->writeln('  - '.$id.' - '.$this->findWordInString($result['C'], $this->searchTerm));
                 if($id) {
-                    $this->replaceForOneColumnRow($tableName, $columnName, $id);
+                    $this->replaceForOneColumnRow($tableName, $columnName, $id, $output);
                 } else {
-                    echo 'ERROR - skipping row as no ID present.'.PHP_EOL;
+                    $output->writeln('ERROR - skipping row as no ID present.');
                 }
             }
         }
     }
 
-    protected function replaceForOneColumnRow(string $tableName, string $columnName, int $id)
+    protected function replaceForOneColumnRow(string $tableName, string $columnName, int $id, PolyOutput $output)
     {
         if($this->replaceTerm) {
-            DB::alteration_message('Replacing '.$this->searchTermRaw.' with '.$this->replaceTermRaw.' in '.$tableName.'.'.$columnName, 'deleted');
+            $output->writeln('Replacing '.$this->searchTermRaw.' with '.$this->replaceTermRaw.' in '.$tableName.'.'.$columnName);
             if ($this->fullMatch) {
                 if ($this->caseSensitive) {
                     // Full match, case-sensitive
                     $sql = '
                         UPDATE "'.$tableName.'"
                         SET "'.$columnName.'" = \''.$this->replaceTermRaw.'\'
-                        WHERE "'.$columnName.'" = \''.$this->searchTermRaw.'\' AND ID = '.$id;
+                        WHERE "'.$columnName.'" = \''.$this->searchTermRaw."' AND ID = ".$id;
                 } else {
                     // Full match, case-insensitive
                     $sql = '
                         UPDATE "'.$tableName.'"
                         SET "'.$columnName.'" = \''.$this->replaceTermRaw.'\'
-                        WHERE LOWER("'.$columnName.'") = LOWER(\''.$this->searchTermRaw.'\') AND ID = '.$id;
+                        WHERE LOWER("'.$columnName.'") = LOWER(\''.$this->searchTermRaw."') AND ID = ".$id;
                 }
-            } else {
-                if ($this->caseSensitive) {
-                    // Partial match, case-sensitive
-                    $sql = '
+            } elseif ($this->caseSensitive) {
+                // Partial match, case-sensitive
+                $sql = '
                         UPDATE "'.$tableName.'"
-                        SET "'.$columnName.'" = REPLACE("'.$columnName.'", \''.$this->searchTermRaw.'\', \''.$this->replaceTermRaw.'\')
+                        SET "'.$columnName.'" = REPLACE("'.$columnName.'", \''.$this->searchTermRaw."', '".$this->replaceTermRaw.'\')
                         WHERE ID = '.$id;
-                } else {
-                    // Partial match, case-insensitive
-                    $sql = '
+            } else {
+                // Partial match, case-insensitive
+                $sql = '
                         UPDATE "'.$tableName.'"
                         SET "'.$columnName.'" = CONCAT(
                             LEFT("'.$columnName.'", LOCATE(LOWER(\''.$this->searchTermRaw.'\'), LOWER("'.$columnName.'")) - 1),
                             \''.$this->replaceTermRaw.'\',
                             SUBSTRING("'.$columnName.'", LOCATE(LOWER(\''.$this->searchTermRaw.'\'), LOWER("'.$columnName.'")) + LENGTH(\''.$this->searchTermRaw.'\'))
                         )
-                        WHERE LOWER("'.$columnName.'") LIKE \'%'.strtolower($this->searchTermRaw).'%\'';
-                }
+                        WHERE LOWER("'.$columnName.'") LIKE \'%'.strtolower((string) $this->searchTermRaw)."%'";
             }
+
             DB::query($sql);
         }
     }
@@ -229,10 +222,12 @@ class SearchAllTablesAndFields extends BuildTask
         if($resultLength < $searchTermLength + ($this->addToStringCharacters * 2)) {
             return $resultString;
         }
+
         $method = 'stripos';
         if($caseSentive) {
             $method = 'strpos';
         }
+
         while (($pos = $method($resultString, $searchTerm, $offset)) !== false) {
             $start = max($pos - $this->addToStringCharacters, 0);
             $length = $searchTermLength + ($this->addToStringCharacters * 2); // 10 characters before + word + 10 characters after
@@ -241,6 +236,7 @@ class SearchAllTablesAndFields extends BuildTask
             if ($pos < $this->addToStringCharacters) {
                 $length -= ($this->addToStringCharacters - $pos);
             }
+
             if($start + $length > $resultLength) {
                 $length = $resultLength - $start;
             }
@@ -254,5 +250,15 @@ class SearchAllTablesAndFields extends BuildTask
         }
 
         return $output;
+    }
+
+    public function getOptions(): array
+    {
+        return [
+            ['search', 's', InputOption::VALUE_REQUIRED, 'Search term'],
+            ['replace', 'r', InputOption::VALUE_OPTIONAL, 'Replacement term'],
+            ['case-sensitive', 'c', InputOption::VALUE_OPTIONAL, 'Case sensitive search flag'],
+            ['full-match', 'f', InputOption::VALUE_OPTIONAL, 'Full match flag'],
+        ];
     }
 }
