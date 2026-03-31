@@ -255,10 +255,10 @@ class SearchAllTablesAndFields extends BuildTask
     public function getOptions(): array
     {
         return [
-            ['search', 's', InputOption::VALUE_REQUIRED, 'Search term'],
-            ['replace', 'r', InputOption::VALUE_OPTIONAL, 'Replacement term'],
-            ['case-sensitive', 'c', InputOption::VALUE_OPTIONAL, 'Case sensitive search flag'],
-            ['full-match', 'f', InputOption::VALUE_OPTIONAL, 'Full match flag'],
+            new InputOption('search', 's', InputOption::VALUE_REQUIRED, 'Search term'),
+            new InputOption('replace', 'r', InputOption::VALUE_OPTIONAL, 'Replacement term'),
+            new InputOption('case-sensitive', 'c', InputOption::VALUE_OPTIONAL, 'Case sensitive search flag'),
+            new InputOption('full-match', 'f', InputOption::VALUE_OPTIONAL, 'Full match flag'),
         ];
     }
 }
