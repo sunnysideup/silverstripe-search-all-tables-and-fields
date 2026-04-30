@@ -2,6 +2,7 @@
 
 namespace Sunnysideup\SearchAllTablesAndFields\Tasks;
 
+use Override;
 use SilverStripe\Core\Convert;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\PolyExecution\PolyOutput;
@@ -30,7 +31,10 @@ class SearchAllTablesAndFields extends BuildTask
 
         ';
 
-    protected $enabled = true;
+    /**
+     * @config
+     */
+    private static $is_enabled = true;
 
     protected static string $commandName = 'search-all-tables-and-fields';
 
@@ -252,6 +256,7 @@ class SearchAllTablesAndFields extends BuildTask
         return $output;
     }
 
+    #[Override]
     public function getOptions(): array
     {
         return [
